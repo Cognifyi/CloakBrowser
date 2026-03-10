@@ -39,7 +39,7 @@ export interface LaunchContextOptions extends LaunchOptions {
   viewport?: { width: number; height: number };
   /** Browser locale, e.g. "en-US". */
   locale?: string;
-  /** @deprecated Use `timezone` (inherited from LaunchOptions) instead. */
+  /** IANA timezone — alias for `timezone`. Either works. */
   timezoneId?: string;
   /** Color scheme preference — 'light', 'dark', or 'no-preference'. */
   colorScheme?: "light" | "dark" | "no-preference";

@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 import os
-import warnings
 from typing import Any, Literal, TypedDict
 from urllib.parse import unquote, urlparse, urlunparse
 
@@ -26,10 +25,9 @@ from .download import ensure_binary
 logger = logging.getLogger("cloakbrowser")
 
 
-def _migrate_timezone_id(timezone: str | None, kwargs: dict[str, Any]) -> str | None:
-    """Pop deprecated timezone_id from kwargs, warn, return resolved timezone."""
+def _resolve_timezone(timezone: str | None, kwargs: dict[str, Any]) -> str | None:
+    """Accept both timezone and timezone_id — either works, no warning."""
     if "timezone_id" in kwargs:
-        warnings.warn("timezone_id is deprecated, use timezone instead", FutureWarning, stacklevel=3)
         if timezone is None:
             timezone = kwargs.pop("timezone_id")
         else:
@@ -279,7 +277,7 @@ def launch_persistent_context(
     """
     sync_playwright = _import_sync_playwright(_resolve_backend(backend))
 
-    timezone = _migrate_timezone_id(timezone, kwargs)
+    timezone = _resolve_timezone(timezone, kwargs)
 
     binary_path = ensure_binary()
     timezone, locale = _maybe_resolve_geoip(geoip, proxy, timezone, locale)
@@ -291,14 +289,12 @@ def launch_persistent_context(
         user_data_dir,
     )
 
+    # locale and timezone are set via binary flags (--lang, --fingerprint-timezone)
+    # — NOT via Playwright context kwargs which use detectable CDP emulation.
     context_kwargs: dict[str, Any] = {}
     if user_agent:
         context_kwargs["user_agent"] = user_agent
     context_kwargs["viewport"] = viewport or DEFAULT_VIEWPORT
-    if locale:
-        context_kwargs["locale"] = locale
-    if timezone:
-        context_kwargs["timezone_id"] = timezone
     if color_scheme:
         context_kwargs["color_scheme"] = color_scheme
     context_kwargs.update(kwargs)
@@ -394,7 +390,7 @@ async def launch_persistent_context_async(
     """
     async_playwright = _import_async_playwright(_resolve_backend(backend))
 
-    timezone = _migrate_timezone_id(timezone, kwargs)
+    timezone = _resolve_timezone(timezone, kwargs)
 
     binary_path = ensure_binary()
     timezone, locale = _maybe_resolve_geoip(geoip, proxy, timezone, locale)
@@ -406,14 +402,12 @@ async def launch_persistent_context_async(
         user_data_dir,
     )
 
+    # locale and timezone are set via binary flags (--lang, --fingerprint-timezone)
+    # — NOT via Playwright context kwargs which use detectable CDP emulation.
     context_kwargs: dict[str, Any] = {}
     if user_agent:
         context_kwargs["user_agent"] = user_agent
     context_kwargs["viewport"] = viewport or DEFAULT_VIEWPORT
-    if locale:
-        context_kwargs["locale"] = locale
-    if timezone:
-        context_kwargs["timezone_id"] = timezone
     if color_scheme:
         context_kwargs["color_scheme"] = color_scheme
     context_kwargs.update(kwargs)
@@ -491,25 +485,21 @@ def launch_context(
     Returns:
         Playwright BrowserContext object.
     """
-    timezone = _migrate_timezone_id(timezone, kwargs)
+    timezone = _resolve_timezone(timezone, kwargs)
 
     # Resolve geoip BEFORE launch() to avoid double-resolution and ensure
-    # resolved values flow to both binary flags AND context params
+    # resolved values flow to binary flags
     timezone, locale = _maybe_resolve_geoip(geoip, proxy, timezone, locale)
-    # Skip --fingerprint-timezone binary flag: it only applies to the default
-    # context and interferes with Playwright's timezone_id on new contexts.
-    # Timezone is set via browser.new_context(timezone_id=...) below instead.
+    # --fingerprint-timezone is process-wide (reads CommandLine in renderer),
+    # so it applies to ALL contexts, not just the default one.
+    # locale and timezone are set via binary flags only — no CDP emulation.
     browser = launch(headless=headless, proxy=proxy, args=args, stealth_args=stealth_args,
-                     timezone=None, locale=locale, backend=backend)
+                     timezone=timezone, locale=locale, backend=backend)
 
     context_kwargs: dict[str, Any] = {}
     if user_agent:
         context_kwargs["user_agent"] = user_agent
     context_kwargs["viewport"] = viewport or DEFAULT_VIEWPORT
-    if locale:
-        context_kwargs["locale"] = locale
-    if timezone:
-        context_kwargs["timezone_id"] = timezone
     if color_scheme:
         context_kwargs["color_scheme"] = color_scheme
     context_kwargs.update(kwargs)
@@ -646,11 +636,11 @@ def _build_args(
             logger.debug("Arg override: %s -> %s", seen[key], flag)
         seen[key] = flag
     if locale:
-        key = "--lang"
-        flag = f"{key}={locale}"
-        if key in seen:
-            logger.debug("Arg override: %s -> %s", seen[key], flag)
-        seen[key] = flag
+        for key in ("--lang", "--fingerprint-locale"):
+            flag = f"{key}={locale}"
+            if key in seen:
+                logger.debug("Arg override: %s -> %s", seen[key], flag)
+            seen[key] = flag
 
     return list(seen.values())
 
