@@ -16,7 +16,7 @@ Drop-in Playwright/Puppeteer replacement. Same API, same code — just swap the 
 - **Passes Cloudflare Turnstile**, FingerprintJS, BrowserScan — tested against 30+ detection sites
 - **`npm install cloakbrowser`** — binary auto-downloads, auto-updates, zero config
 - **Free and open source** — no subscriptions, no usage limits
-- **Works with any framework** — also tested with Selenium, undetected-chromedriver, browser-use, Crawl4AI, and agent-browser
+- **Works with any framework** — tested with browser-use, Crawl4AI, Scrapling, Stagehand ([example](examples/stagehand.ts)), LangChain, Selenium, and more
 
 ## Install
 

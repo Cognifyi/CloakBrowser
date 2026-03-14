@@ -147,7 +147,7 @@ See the full [CHANGELOG.md](CHANGELOG.md) for details.
 - **CloakBrowser patches Chromium source code** — fingerprints are modified at the C++ level, compiled into the binary. Detection sites see a real browser because it *is* a real browser.
 - **Source-level stealth** — C++ patches handle fingerprints (GPU, screen, UA, hardware reporting) at the binary level. No JavaScript injection, no config-level hacks. Most stealth tools only patch at the surface.
 - **Same behavior everywhere** — works identically local, in Docker, and on VPS. No environment-specific patches or config needed.
-- **Works with AI agents and automation frameworks** — drop-in stealth for browser-use, Crawl4AI, agent-browser, Claude computer use, and OpenAI Operator. Also tested with Playwright, Puppeteer, and Selenium — point any Chromium-based framework at the binary path.
+- **Works with AI agents and automation frameworks** — drop-in stealth for browser-use, Crawl4AI, Scrapling, Stagehand, LangChain, Selenium, and more. See [integrations](#framework-integrations).
 
 CloakBrowser doesn't solve CAPTCHAs — it prevents them from appearing. No CAPTCHA-solving services, no proxy rotation built in — bring your own proxies, use the Playwright API you already know.
 
@@ -609,6 +609,34 @@ browser = launch(args=[
 - [`basic-playwright.ts`](js/examples/basic-playwright.ts) — Playwright launch and load
 - [`basic-puppeteer.ts`](js/examples/basic-puppeteer.ts) — Puppeteer launch and load
 - [`stealth-test.ts`](js/examples/stealth-test.ts) — Run against 6 detection sites
+
+### Framework Integrations
+
+CloakBrowser works with any framework that uses Playwright or Chromium:
+
+```python
+# Option 1: Framework launches our binary directly (Selenium, Stagehand, UC)
+from cloakbrowser.download import ensure_binary
+from cloakbrowser.config import get_default_stealth_args
+binary_path = ensure_binary()          # auto-downloads if needed
+stealth_args = get_default_stealth_args()  # all fingerprint flags
+
+# Option 2: CloakBrowser launches first, framework connects via CDP (browser-use, Crawl4AI, Scrapling)
+from cloakbrowser import launch_async
+browser = await launch_async(args=["--remote-debugging-port=9242"])
+# Connect your framework to http://127.0.0.1:9242 — all stealth flags are set
+```
+
+| Framework | Stars | Language | Example |
+|-----------|-------|----------|---------|
+| [browser-use](https://github.com/browser-use/browser-use) | 70K | Python | [`browser_use_example.py`](examples/integrations/browser_use_example.py) |
+| [Crawl4AI](https://github.com/unclecode/crawl4ai) | 58K | Python | [`crawl4ai_example.py`](examples/integrations/crawl4ai_example.py) |
+| [Scrapling](https://github.com/D4Vinci/Scrapling) | 21K | Python | [`scrapling_example.py`](examples/integrations/scrapling_example.py) |
+| [Stagehand](https://github.com/browserbase/stagehand) | 21K | TypeScript | [`stagehand.ts`](js/examples/stagehand.ts) |
+| [LangChain](https://github.com/langchain-ai/langchain) | 100K+ | Python | [`langchain_loader.py`](examples/integrations/langchain_loader.py) |
+| [Selenium](https://github.com/SeleniumHQ/selenium) | — | Python | [`selenium_example.py`](examples/integrations/selenium_example.py) |
+| [undetected-chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver) | 12K | Python | [`undetected_chromedriver.py`](examples/integrations/undetected_chromedriver.py) |
+| [agent-browser](https://github.com/nichochar/agent-browser) | — | Shell | [`agent_browser.sh`](examples/integrations/agent_browser.sh) |
 
 ## Platforms
 
