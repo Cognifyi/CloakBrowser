@@ -501,6 +501,8 @@ const browser = await launch({
 
 Access the original un-patched Playwright page at `page._original` if you need raw speed for a specific call.
 
+> **Note:** Always use `page.click(selector)`, `page.type(selector, text)`, `page.hover(selector)`, or `page.locator(selector).*` — these go through the full humanize pipeline. Avoid `page.query_selector()` — `ElementHandle` objects bypass all patches, so mouse movement teleports, keyboard events fire without timing, and scroll has no human curve.
+
 > Contributed by [@evelaa123](https://github.com/evelaa123) — full Playwright API coverage.
 
 ## Configuration
