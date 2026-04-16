@@ -8,8 +8,13 @@ Changes are tagged: **[wrapper]** for Python/JS wrapper, **[binary]** for Chromi
 
 ## [Unreleased]
 
+## [0.3.25] — 2026-04-16
+
 - **[wrapper]** Python: add `launch_context_async()` — async counterpart to `launch_context()`. Returns a BrowserContext with all kwargs forwarded to `browser.new_context()`, enabling `storage_state`, `permissions`, `extra_http_headers`, etc. without a persistent profile folder. Closes #141.
 - **[wrapper]** JS: `launchContext()` and `launchPersistentContext()` silently dropped unknown options (including `storageState`). New `contextOptions` escape hatch forwards arbitrary options to Playwright's `newContext()`.
+- **[wrapper]** Fix `humanConfig` TypeScript typing (#151).
+- **[binary]** New build 146.0.7680.177.3 for Linux x64 + arm64 — 57 source-level fingerprint patches (up from 49): WebAuthn capabilities, AAC audio encoder, and window position spoofing; WebGL and canvas format consistency fixes; SOCKS5 warm connection pool auth fix for credentialed proxies.
+- **[docs]** Add recommended anti-bot config and SOCKS5 tips to troubleshooting.
 
 ## [0.3.24] — 2026-04-10
 

@@ -128,11 +128,13 @@ Open [http://localhost:8080](http://localhost:8080). Create a profile. Click **L
 
 ---
 
-## Latest: v0.3.24 (Chromium 146.0.7680.177.2)
+## Latest: v0.3.25 (Chromium 146.0.7680.177.3)
 
+- **`launch_context_async()`** — async counterpart to `launch_context()`. Forwards kwargs to `browser.new_context()` for `storage_state`, `permissions`, `extra_http_headers` without a persistent profile folder.
+- **JS `contextOptions` escape hatch** — forward arbitrary options (including `storageState`) to Playwright's `newContext()` from `launchContext()` / `launchPersistentContext()`.
 - **Native SOCKS5 proxy** — `proxy="socks5://user:pass@host:port"` works directly in all launch functions, Python + JS. QUIC/HTTP3 tunnels through SOCKS5 via UDP ASSOCIATE.
 - **Chromium 146 upgrade** — rebased all patches from 145.0.7632.x to 146.0.7680.177
-- **49 fingerprint patches** — Linux arm64 now matches Linux x64 on Chromium 146
+- **57 fingerprint patches** — additional detection-vector coverage (WebAuthn, AAC audio, window position) and WebGL/canvas consistency fixes
 - **WebRTC IP spoofing** — `--fingerprint-webrtc-ip=auto` resolves your proxy's exit IP and spoofs WebRTC ICE candidates. Auto-injected when using `geoip=True` (no extra network call)
 - **Proxy signal removal** — DNS/connect/SSL timing zeroed, proxy cache headers stripped, Proxy-Connection header leak removed
 - **`cloakserve` CDP multiplexer** — rewritten as a multi-connection CDP proxy with per-connection fingerprint seeds
@@ -404,7 +406,7 @@ from cloakbrowser import binary_info, clear_cache, ensure_binary
 
 # Check binary installation status
 print(binary_info())
-# {'version': '146.0.7680.177.2', 'platform': 'linux-x64', 'installed': True, ...}
+# {'version': '146.0.7680.177.3', 'platform': 'linux-x64', 'installed': True, ...}
 
 # Force re-download
 clear_cache()
@@ -1124,7 +1126,7 @@ All releases are signed for supply chain verification.
 ```bash
 # Verify GPG signature (binary release tag)
 gpg --keyserver keyserver.ubuntu.com --recv-keys C60C0DDC9D0DE2DD
-git verify-tag chromium-v146.0.7680.177.2
+git verify-tag chromium-v146.0.7680.177.3
 
 # Verify GitHub binary attestation (Sigstore)
 gh attestation verify cloakbrowser-linux-x64.tar.gz --repo CloakHQ/cloakbrowser
