@@ -398,6 +398,69 @@ describe("patchPage frame patching", () => {
 
     expect((childFrame as any)._humanPatched).toBe(true);
   });
+
+  it("uses frame.locator for frame.click instead of page.click", async () => {
+    const { patchPage } = await import("../src/human/index.js");
+
+    const childFrame = buildMockFrame();
+    const mainFrame = {
+      ...buildMockFrame(),
+      childFrames: vi.fn(() => [childFrame]),
+    };
+    const page = buildMockPage({ mainFrameReturn: mainFrame });
+    const originalPageClick = page.click;
+    const cfg = resolveConfig("default", { mouse_min_steps: 1, mouse_max_steps: 1 });
+    const cursor = { x: 0, y: 0, initialized: true };
+    patchPage(page as any, cfg, cursor as any);
+
+    await (childFrame as any).click("button.submit", { timeout: 1234 });
+
+    expect(childFrame.locator).toHaveBeenCalledWith("button.submit");
+    expect(originalPageClick).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["type", async (frame: any) => frame.type("input.email", "@")],
+    ["fill", async (frame: any) => frame.fill("input.email", "@")],
+    ["pressSequentially", async (frame: any) => frame.pressSequentially("input.email", "@")],
+  ])("passes the page CDP session to frame.%s", async (_name, runFrameAction) => {
+    const { patchPage } = await import("../src/human/index.js");
+
+    const cdpSend = vi.fn(async () => ({}));
+    const childFrame = buildMockFrame();
+    const mainFrame = {
+      ...buildMockFrame(),
+      childFrames: vi.fn(() => [childFrame]),
+    };
+    const page = buildMockPage({ mainFrameReturn: mainFrame });
+    page.context = vi.fn(() => ({
+      pages: vi.fn(() => []),
+      addInitScript: vi.fn(async () => {}),
+      newCDPSession: vi.fn(async () => ({ send: cdpSend })),
+    }));
+
+    const cfg = resolveConfig("default", {
+      field_switch_delay: [0, 0],
+      key_hold: [0, 0],
+      shift_down_delay: [0, 0],
+      shift_up_delay: [0, 0],
+      typing_delay: 0,
+      typing_delay_spread: 0,
+      typing_pause_chance: 0,
+      mistype_chance: 0,
+      mouse_min_steps: 1,
+      mouse_max_steps: 1,
+      idle_between_actions: false,
+    });
+    const cursor = { x: 0, y: 0, initialized: true };
+    patchPage(page as any, cfg, cursor as any);
+
+    await runFrameAction(childFrame);
+
+    const dispatches = cdpSend.mock.calls.filter(([method]) => method === "Input.dispatchKeyEvent");
+    expect(dispatches).toHaveLength(2);
+    expect(page.evaluate).not.toHaveBeenCalled();
+  });
 });
 
 // =========================================================================
@@ -1034,6 +1097,14 @@ describe("patchPage integrates ElementHandle patching", () => {
 
 
 function buildMockFrame(): any {
+  const locator: any = {
+    boundingBox: vi.fn(async () => ({ x: 0, y: 0, width: 100, height: 30 })),
+    scrollIntoViewIfNeeded: vi.fn(async () => {}),
+    evaluate: vi.fn(async () => false),
+    isChecked: vi.fn(async () => false),
+  };
+  locator.first = vi.fn(() => locator);
+
   return {
     click: vi.fn(async () => {}),
     dblclick: vi.fn(async () => {}),
@@ -1044,11 +1115,11 @@ function buildMockFrame(): any {
     uncheck: vi.fn(async () => {}),
     selectOption: vi.fn(async () => {}),
     press: vi.fn(async () => {}),
+    pressSequentially: vi.fn(async () => {}),
+    tap: vi.fn(async () => {}),
     clear: vi.fn(async () => {}),
     dragAndDrop: vi.fn(async () => {}),
-    locator: vi.fn(() => ({
-      boundingBox: vi.fn(async () => ({ x: 0, y: 0, width: 100, height: 30 })),
-    })),
+    locator: vi.fn(() => locator),
     childFrames: vi.fn(() => []),
   };
 }
