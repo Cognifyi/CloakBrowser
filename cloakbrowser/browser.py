@@ -25,6 +25,7 @@ from .human.config import HumanConfigOverrides, HumanPreset
 
 logger = logging.getLogger("cloakbrowser")
 
+
 # Sentinel to distinguish "viewport not provided" from "viewport=None" (disable emulation)
 _VIEWPORT_UNSET = object()
 
@@ -890,7 +891,7 @@ def maybe_resolve_geoip(
     if not geoip or not proxy:
         return timezone, locale, None
 
-    from .geoip import resolve_proxy_geo_with_ip
+    from .geoip import resolve_proxy_exit_ip, resolve_proxy_geo_with_ip
 
     proxy_url = _extract_proxy_url(proxy)
     if not proxy_url:
@@ -898,11 +899,13 @@ def maybe_resolve_geoip(
 
     # When both tz/locale are explicit, still resolve exit IP for WebRTC
     if timezone is not None and locale is not None:
-        from .geoip import _resolve_exit_ip
-        exit_ip = _resolve_exit_ip(proxy_url)
+        exit_ip = resolve_proxy_exit_ip(proxy_url)
         return timezone, locale, exit_ip
 
-    geo_tz, geo_locale, exit_ip = resolve_proxy_geo_with_ip(proxy_url)
+    geo_result = resolve_proxy_geo_with_ip(proxy_url)
+    if geo_result is None:
+        return timezone, locale, None
+    geo_tz, geo_locale, exit_ip = geo_result
     if timezone is None:
         timezone = geo_tz
     if locale is None:
